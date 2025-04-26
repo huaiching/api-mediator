@@ -15,6 +15,18 @@ API Gateway 中台是一個基於 Spring Boot 的代理服務，用於統一管�
 - **Maven**: 3.6 或以上
 - **後端服務**：需提供有效的 OpenAPI JSON（例如 `http://localhost:9091/api-docs`）
 
+## 目錄結構
+```
+src/main/java/com/example/api_mediator/
+├── config/                # 配置類
+├── controller/            # 控制器層
+├── service/               # 服務層
+├── client/                # HTTP 客戶端層
+├── dto/                   # 資料傳輸對象
+├── util/                  # 工具類
+└── exception/             # 異常處理
+```
+
 ## 安裝與啟動
 
 ### 1. 檢查 `application.yml` 配置 後端 `swagger api json` 和 `url 設定` 
