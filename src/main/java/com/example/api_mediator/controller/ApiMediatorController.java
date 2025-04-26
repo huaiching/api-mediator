@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * API 中介控制器 (Mediator)
- * 負責轉發前端請求至各後端系統，並處理 swagger 資訊聚合
+ * 負責轉發前端請求至各後端系統，並處理 Swagger 資訊聚合
  */
 @RestController
 @RequestMapping("/mediator")
@@ -37,10 +37,10 @@ public class ApiMediatorController {
 
     /**
      * 提供 Swagger-UI 動態配置的接口
-     * 返回後端 API 列表供 Swagger-UI 顯示切換選單
+     * 將後端API列表返回給 Swagger-UI 顯示切換選單
      *
      * @param request HTTP請求
-     * @return Swagger UI 所需的配置
+     * @return Swagger-UI 所需的配置 JSON
      */
     @GetMapping("/swagger-config")
     public ObjectNode swaggerConfig(HttpServletRequest request) {
@@ -55,33 +55,33 @@ public class ApiMediatorController {
         });
 
         config.set("urls", urls);
-        config.put("url", ""); // 不使用單一模式
+        config.put("url", ""); // 不使用單一API入口
         config.put("validatorUrl", ""); // 關閉驗證器
         return config;
     }
 
     /**
      * 中介轉發請求到指定後端
-     * 支援 GET / POST / PUT / DELETE / OPTIONS 等方法
+     * 支援 GET / POST / PUT / DELETE / OPTIONS 等HTTP方法
      *
      * @param backendName 後端服務名稱
      * @param request 原始HTTP請求
-     * @return 後端返回的響應
-     * @throws IOException 讀取請求體錯誤時拋出
+     * @return 後端返回的響應資料
+     * @throws IOException 讀取請求體失敗時拋出
      */
     @RequestMapping(value = "/{backendName}/**", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
     public Mono<ResponseEntity<byte[]>> proxyRequest(@PathVariable String backendName, HttpServletRequest request) throws IOException {
-        // CORS 預檢請求直接回應
+        // 如果是 CORS 預檢請求，直接回應
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             HttpHeaders corsHeaders = buildCorsHeaders(request);
             return Mono.just(ResponseEntity.ok().headers(corsHeaders).body(new byte[0]));
         }
 
-        // 從設定檔找出對應的後端
+        // 從設定檔中尋找對應的後端服務
         Map<String, String> backend = backendConfig.getApis().stream()
                 .filter(api -> backendName.equals(api.get("name")))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Backend not found: " + backendName));
+                .orElseThrow(() -> new IllegalArgumentException("找不到對應的後端服務：" + backendName));
 
         String backendUrl = backend.get("url");
 
@@ -91,11 +91,11 @@ public class ApiMediatorController {
         String queryString = request.getQueryString();
         String fullUrl = backendUrl + requestPath + (queryString != null ? "?" + queryString : "");
 
-        log.info("Mediator forwarding to: {}", fullUrl);
+        log.info("中介器轉發請求至：{}", fullUrl);
 
         WebClient.RequestBodyUriSpec requestSpec = webClient.method(HttpMethod.valueOf(request.getMethod()));
 
-        // 建立轉發用的Header
+        // 建立轉發用的 Header
         HttpHeaders headers = new HttpHeaders();
         request.getHeaderNames().asIterator().forEachRemaining(name -> {
             if (!name.equalsIgnoreCase("Host") && !name.equalsIgnoreCase("Content-Length")) {
@@ -126,11 +126,11 @@ public class ApiMediatorController {
                             String modifiedJson = modifyOpenApiJson(originalJson, backendName, request);
                             responseBody = modifiedJson.getBytes(StandardCharsets.UTF_8);
                         } catch (IOException e) {
-                            log.error("Failed to modify OpenAPI JSON", e);
+                            log.error("修改 OpenAPI JSON 失敗", e);
                         }
                     }
 
-                    // 回傳後端響應
+                    // 建立回應Header，並加上 CORS 設定
                     HttpHeaders responseHeaders = new HttpHeaders();
                     responseEntity.getHeaders().forEach((name, values) -> {
                         if (!name.equalsIgnoreCase("Content-Length")
@@ -147,7 +147,7 @@ public class ApiMediatorController {
                             .body(responseBody));
                 })
                 .onErrorResume(ex -> {
-                    log.error("Proxy error:", ex);
+                    log.error("代理過程發生錯誤：", ex);
 
                     int code = 502;
                     String message = "代理錯誤：" + ex.getMessage();
@@ -163,7 +163,7 @@ public class ApiMediatorController {
                         message = ex.getMessage();
                     }
 
-                    // 回傳錯誤格式
+                    // 組成錯誤回應格式
                     ObjectNode errorJson = objectMapper.createObjectNode();
                     errorJson.put("code", code);
                     errorJson.put("message", message);
@@ -172,7 +172,7 @@ public class ApiMediatorController {
                     try {
                         errorBytes = objectMapper.writeValueAsBytes(errorJson);
                     } catch (Exception e) {
-                        errorBytes = ("{\"code\":502,\"message\":\"Proxy error\"}").getBytes(StandardCharsets.UTF_8);
+                        errorBytes = ("{\"code\":502,\"message\":\"代理錯誤\"}").getBytes(StandardCharsets.UTF_8);
                     }
 
                     HttpHeaders headersForError = buildCorsHeaders(request);
@@ -185,10 +185,10 @@ public class ApiMediatorController {
     }
 
     /**
-     * 建立標準 CORS 回應 Header
+     * 建立標準的 CORS 回應 Header
      *
      * @param request 原始HTTP請求
-     * @return HttpHeaders 包含CORS設定
+     * @return 包含CORS設定的HttpHeaders
      */
     private HttpHeaders buildCorsHeaders(HttpServletRequest request) {
         HttpHeaders headers = new HttpHeaders();
@@ -202,13 +202,13 @@ public class ApiMediatorController {
     }
 
     /**
-     * 修改 OpenAPI JSON，重新設定 servers 欄位
+     * 修改 OpenAPI JSON，重新設定 servers 欄位為指向中介器
      *
-     * @param json 原始 OpenAPI JSON
+     * @param json 原始 OpenAPI JSON 字串
      * @param backendName 後端服務名稱
      * @param request 原始HTTP請求
      * @return 修改後的 JSON 字串
-     * @throws IOException JSON處理錯誤時拋出
+     * @throws IOException 解析或寫入 JSON 發生錯誤時拋出
      */
     private String modifyOpenApiJson(String json, String backendName, HttpServletRequest request) throws IOException {
         try {
@@ -217,7 +217,7 @@ public class ApiMediatorController {
                 ((ObjectNode) rootNode).remove("servers");
             }
 
-            // 動態計算 servers URL
+            // 計算經過中介器的新 URL
             String gatewayUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + "/mediator/" + backendName;
             ArrayNode serversNode = objectMapper.createArrayNode();
             ObjectNode serverNode = objectMapper.createObjectNode();
@@ -227,7 +227,7 @@ public class ApiMediatorController {
 
             return objectMapper.writeValueAsString(rootNode);
         } catch (Exception e) {
-            log.error("Failed to modify OpenAPI JSON for backend: {}", backendName, e);
+            log.error("修改後端 {} 的 OpenAPI JSON 失敗", backendName, e);
             return json;
         }
     }
