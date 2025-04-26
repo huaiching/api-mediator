@@ -13,6 +13,6 @@ springdoc:
     path: /swagger-ui
     urls:
       - name: proxy1
-        url: /proxy/proxy1/api-docs
+        url: /mediator/proxy1/api-docs
       - name: proxy2
-        url: /proxy/proxy2/api-docs
+        url: /mediator/proxy2/api-docs
