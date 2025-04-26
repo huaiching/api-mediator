@@ -1,0 +1,20 @@
+server:
+  port: 9000
+proxy:
+  apis:
+    - name: proxy1
+      url: http://localhost:9091
+      swagger: /api-docs
+    - name: proxy2
+      url: http://localhost:9091
+      swagger: /api-docs
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    urls:
+      - name: proxy1
+        url: /proxy/proxy1/api-docs
+      - name: proxy2
+        url: /proxy/proxy2/api-docs
