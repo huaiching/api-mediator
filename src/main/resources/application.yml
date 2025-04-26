@@ -11,8 +11,4 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui
-    urls:
-      - name: proxy1
-        url: /mediator/proxy1/api-docs
-      - name: proxy2
-        url: /mediator/proxy2/api-docs
+    config-url: /mediator/swagger-config
