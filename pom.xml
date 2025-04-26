@@ -42,10 +42,16 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- HTTP Client for Proxy -->
+<!--		&lt;!&ndash; HTTP Client for Proxy &ndash;&gt;-->
+<!--		<dependency>-->
+<!--			<groupId>org.apache.httpcomponents</groupId>-->
+<!--			<artifactId>httpclient</artifactId>-->
+<!--		</dependency>-->
+
+		<!-- 添加WebClient依賴 -->
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 	</dependencies>
 

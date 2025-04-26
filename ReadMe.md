@@ -36,10 +36,8 @@ src/main/java/com/example/api_mediator/
     apis:     # 這裡 配置 後端 swagger api json
       - name: proxy1                    # 後端 api 名稱 (要呈現於網址中，不可使用中文)
         url: http://localhost:9091      # 後端 api 網址
-        swagger: /api-docs
       - name: proxy2
         url: http://localhost:9092
-        swagger: /api-docs
   springdoc:
     api-docs:
       path: /api-docs
