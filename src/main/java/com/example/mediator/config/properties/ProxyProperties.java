@@ -1,4 +1,4 @@
-package com.example.api_mediator.config.properties;
+package com.example.mediator.config.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

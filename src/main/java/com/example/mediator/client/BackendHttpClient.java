@@ -1,4 +1,4 @@
-package com.example.api_mediator.client;
+package com.example.mediator.client;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;

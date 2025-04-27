@@ -1,6 +1,6 @@
-package com.example.api_mediator.controller;
+package com.example.mediator.controller;
 
-import com.example.api_mediator.service.ProxyService;
+import com.example.mediator.service.ProxyService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.ResponseEntity;

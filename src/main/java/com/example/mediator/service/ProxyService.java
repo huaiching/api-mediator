@@ -1,7 +1,7 @@
-package com.example.api_mediator.service;
+package com.example.mediator.service;
 
-import com.example.api_mediator.client.BackendHttpClient;
-import com.example.api_mediator.config.properties.ProxyProperties;
+import com.example.mediator.client.BackendHttpClient;
+import com.example.mediator.config.properties.ProxyProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;

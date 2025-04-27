@@ -1,4 +1,4 @@
-package com.example.api_mediator.config;
+package com.example.mediator.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.models.OpenAPI;

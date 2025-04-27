@@ -1,4 +1,4 @@
-package com.example.api_mediator.controller;
+package com.example.mediator.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
