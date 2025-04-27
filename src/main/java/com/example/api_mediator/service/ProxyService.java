@@ -21,9 +21,9 @@ import java.util.logging.Logger;
  * 中介邏輯服務，負責轉發請求與修改 OpenAPI JSON
  */
 @Service
-public class MediatorService {
+public class ProxyService {
 
-    private static final Logger logger = Logger.getLogger(MediatorService.class.getName());
+    private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
 
     private final ProxyProperties proxyProperties;
     private final BackendHttpClient backendHttpClient;
@@ -33,7 +33,7 @@ public class MediatorService {
     /**
      * 建構子，注入後端設定與 HTTP 客戶端
      */
-    public MediatorService(ProxyProperties proxyProperties, BackendHttpClient backendHttpClient, ObjectMapper objectMapper) {
+    public ProxyService(ProxyProperties proxyProperties, BackendHttpClient backendHttpClient, ObjectMapper objectMapper) {
         this.proxyProperties = proxyProperties;
         this.backendHttpClient = backendHttpClient;
         this.objectMapper = objectMapper;
@@ -58,7 +58,7 @@ public class MediatorService {
         proxyProperties.getApis().forEach(api -> {
             ObjectNode urlObj2 = objectMapper.createObjectNode();
             urlObj2.put("name", api.getName());
-            urlObj2.put("url", "/mediator/" + api.getPath() + "/api-docs");
+            urlObj2.put("url", "/proxy/" + api.getPath() + "/api-docs");
             urls.add(urlObj2);
         });
 
@@ -87,7 +87,7 @@ public class MediatorService {
         }
 
         String backendUrl = proxyApi.getUrl();
-        String prefix = "/mediator/" + proxyApi.getPath();
+        String prefix = "/proxy/" + proxyApi.getPath();
         String requestPath = request.getRequestURI().replace(prefix, "");
         String queryString = request.getQueryString();
         String fullUrl = backendUrl + requestPath + (queryString != null ? "?" + queryString : "");
@@ -229,7 +229,7 @@ public class MediatorService {
         ((ObjectNode) rootNode).remove("servers");
 
         String gatewayUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
-                + "/mediator/" + backendName;
+                + "/proxy/" + backendName;
         ArrayNode serversNode = objectMapper.createArrayNode();
         ObjectNode serverNode = objectMapper.createObjectNode();
         serverNode.put("url", gatewayUrl);

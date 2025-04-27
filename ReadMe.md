@@ -6,8 +6,10 @@ API Gateway 中台是一個基於 Spring Boot 的代理服務，用於統一管�
 前端只需透過中台的統一網址（例如 `http://localhost:9000/mediator/{backendName}/{path}` ）即可呼叫所有後端服務，無需直接訪問後端實際 URL。
 
 ### 主要功能
-- 透過 API 代理，根據 後端 API 文檔 動態配置 後端服務，可將多個後端服務 統一整合為 中台網域，提供前端更簡便的設定。
-- **動態後端配置**：透過 `application.yml` 配置後端服務，易於新增或修改。
+### 1. 代理後端 API 服務，提供前端 統一的 接口
+  - **URL**: http://localhost:9000/proxy/後端服務path/...
+### 2. 針對其他整合性的服務，可以於中台撰寫 controller
+  - **URL**: http://localhost:9000/中台服務名稱/...
 
 ## 啟動
 - 運行 `ApiGatewayApplication`。
@@ -30,15 +32,17 @@ src/main/java/com/example/api_mediator/
 server:
   port: 9000
 proxy:
-  apis:                             # 這裡 配置 後端 swagger api json
-    - name: proxy1                    # 後端服務名稱 (要呈現於網址中，不可使用中文)
-      url: http://localhost:9091      # 後端服務網址
-    - name: proxy2
-      url: http://localhost:9091
+  apis:                           # 這裡 配置 後端 swagger api json
+    - name: 後端服務1                 # SWAGGER 菜單的顯示名稱
+      path: proxy1                   # 後端服務網域 (要呈現於網址中，不可使用中文)
+      url: http://localhost:9091     # 後端服務網址
+    - name: 後端服務2
+      path: proxy2
+      url: http://localhost:9092
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui
-    config-url: /mediator/swagger-config
+    config-url: /proxy/swagger-config
 ```

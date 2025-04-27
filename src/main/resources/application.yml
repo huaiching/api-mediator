@@ -1,9 +1,5 @@
 server:
   port: 9000
-  host: localhost  # 確保使用正確的主機名稱
-  servlet:
-    context-path: /
-
 proxy:
   apis:
     - name: 後端服務1
@@ -17,4 +13,4 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui
-    config-url: /mediator/swagger-config
+    config-url: /proxy/swagger-config

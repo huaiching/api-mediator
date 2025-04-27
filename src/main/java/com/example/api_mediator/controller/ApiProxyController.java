@@ -1,6 +1,6 @@
 package com.example.api_mediator.controller;
 
-import com.example.api_mediator.service.MediatorService;
+import com.example.api_mediator.service.ProxyService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.Null;
 import java.io.IOException;
 
 /**
@@ -16,16 +15,16 @@ import java.io.IOException;
  */
 @Hidden
 @RestController
-@RequestMapping("/mediator")
-public class ApiMediatorController {
+@RequestMapping("/proxy")
+public class ApiProxyController {
 
-    private final MediatorService mediatorService;
+    private final ProxyService proxyService;
 
     /**
      * 建構子，注入中介服務
      */
-    public ApiMediatorController(MediatorService mediatorService) {
-        this.mediatorService = mediatorService;
+    public ApiProxyController(ProxyService proxyService) {
+        this.proxyService = proxyService;
     }
 
     /**
@@ -35,11 +34,11 @@ public class ApiMediatorController {
      */
     @GetMapping("/swagger-config")
     public ObjectNode swaggerConfig() {
-        return mediatorService.buildSwaggerConfig();
+        return proxyService.buildSwaggerConfig();
     }
 
     /**
-     * 代理所有經由 /mediator/{backendName}/ 的請求
+     * 代理所有經由 /proxy/{backendName}/ 的請求
      *
      * @param backendName 後端名稱
      * @param request     原始 HTTP 請求
@@ -49,8 +48,8 @@ public class ApiMediatorController {
     @RequestMapping(value = "/{backendName}/**", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
     public Mono<ResponseEntity<byte[]>> proxyRequest(@PathVariable String backendName, HttpServletRequest request) throws IOException {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            return Mono.just(ResponseEntity.ok().headers(mediatorService.buildCorsHeaders(request)).body(new byte[0]));
+            return Mono.just(ResponseEntity.ok().headers(proxyService.buildCorsHeaders(request)).body(new byte[0]));
         }
-        return mediatorService.proxy(backendName, request);
+        return proxyService.proxy(backendName, request);
     }
 }
