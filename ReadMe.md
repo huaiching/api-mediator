@@ -20,6 +20,8 @@ API Gateway 中台是一個基於 Spring Boot 的代理服務，用於統一管�
 src/main/java/com/example/api_mediator/
 ├── config/                # 配置類
 ├── controller/            # 控制器層
+├── client/                # Http 轉發請求 
+├── service/               # 邏輯處理 
 ```
 
 ## 註冊後端服務
