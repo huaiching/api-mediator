@@ -1,12 +1,12 @@
 package com.example.api_mediator;
 
-import com.example.api_mediator.config.BackendConfig;
+import com.example.api_mediator.config.properties.ProxyProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(BackendConfig.class)
+@EnableConfigurationProperties({ProxyProperties.class})
 public class ApiMediatorApplication {
 
 	public static void main(String[] args) {

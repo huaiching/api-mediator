@@ -1,7 +1,7 @@
 package com.example.api_mediator.service;
 
 import com.example.api_mediator.client.BackendHttpClient;
-import com.example.api_mediator.config.BackendConfig;
+import com.example.api_mediator.config.properties.ProxyProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -14,8 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,17 +25,18 @@ public class MediatorService {
 
     private static final Logger logger = Logger.getLogger(MediatorService.class.getName());
 
-    private final BackendConfig backendConfig;
+    private final ProxyProperties proxyProperties;
     private final BackendHttpClient backendHttpClient;
     private final ObjectMapper objectMapper;
+
 
     /**
      * 建構子，注入後端設定與 HTTP 客戶端
      */
-    public MediatorService(BackendConfig backendConfig, BackendHttpClient backendHttpClient) {
-        this.backendConfig = backendConfig;
+    public MediatorService(ProxyProperties proxyProperties, BackendHttpClient backendHttpClient, ObjectMapper objectMapper) {
+        this.proxyProperties = proxyProperties;
         this.backendHttpClient = backendHttpClient;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -49,12 +48,20 @@ public class MediatorService {
         ObjectNode config = objectMapper.createObjectNode();
         ArrayNode urls = objectMapper.createArrayNode();
 
-        backendConfig.getApis().forEach(api -> {
-            ObjectNode urlObj = objectMapper.createObjectNode();
-            urlObj.put("name", api.get("name"));
-            urlObj.put("url", "/mediator/" + api.get("name") + "/api-docs");
-            urls.add(urlObj);
+        // SWAGGER 加入 中台服務
+        ObjectNode urlObj1 = objectMapper.createObjectNode();
+        urlObj1.put("name", "中台服務");
+        urlObj1.put("url", "/api-docs");
+        urls.add(urlObj1);
+
+        // SWAGGER 加入 後端代理服務: 讀取 proxy.apis 的設定
+        proxyProperties.getApis().forEach(api -> {
+            ObjectNode urlObj2 = objectMapper.createObjectNode();
+            urlObj2.put("name", api.getName());
+            urlObj2.put("url", "/mediator/" + api.getPath() + "/api-docs");
+            urls.add(urlObj2);
         });
+
 
         config.set("urls", urls);
         config.put("url", "");
@@ -71,17 +78,16 @@ public class MediatorService {
      * @throws IOException 讀取 request body 發生錯誤
      */
     public Mono<ResponseEntity<byte[]>> proxy(String backendName, HttpServletRequest request) throws IOException {
-        Optional<Map<String, String>> backendOpt = backendConfig.getApis().stream()
-                .filter(api -> backendName.equals(api.get("name")))
-                .findFirst();
+        var proxyApi = proxyProperties.getApis().stream()
+                .filter(api -> backendName.equals(api.getPath()))
+                .findFirst().orElse(null);
 
-        if (!backendOpt.isPresent()) {
+        if (proxyApi == null) {
             throw new IllegalArgumentException("找不到後端設定：" + backendName);
         }
 
-        Map<String, String> backend = backendOpt.get();
-        String backendUrl = backend.get("url");
-        String prefix = "/mediator/" + backendName;
+        String backendUrl = proxyApi.getUrl();
+        String prefix = "/mediator/" + proxyApi.getPath();
         String requestPath = request.getRequestURI().replace(prefix, "");
         String queryString = request.getQueryString();
         String fullUrl = backendUrl + requestPath + (queryString != null ? "?" + queryString : "");

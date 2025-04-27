@@ -1,10 +1,16 @@
 server:
   port: 9000
+  host: localhost  # 確保使用正確的主機名稱
+  servlet:
+    context-path: /
+
 proxy:
   apis:
-    - name: proxy1
+    - name: 後端服務1
+      path: proxy1
       url: http://localhost:9091
-    - name: proxy2
+    - name: 後端服務2
+      path: proxy2
       url: http://localhost:9091
 springdoc:
   api-docs:

@@ -2,16 +2,19 @@ package com.example.api_mediator.controller;
 
 import com.example.api_mediator.service.MediatorService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Null;
 import java.io.IOException;
 
 /**
  * API 中介控制器，負責處理進來的 HTTP 請求
  */
+@Hidden
 @RestController
 @RequestMapping("/mediator")
 public class ApiMediatorController {
