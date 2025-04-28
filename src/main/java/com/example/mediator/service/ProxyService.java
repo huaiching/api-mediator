@@ -13,7 +13,6 @@ import reactor.core.publisher.Mono;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,7 +27,6 @@ public class ProxyService {
     private final ProxyProperties proxyProperties;
     private final BackendHttpClient backendHttpClient;
     private final ObjectMapper objectMapper;
-
 
     /**
      * 建構子，注入後端設定與 HTTP 客戶端
@@ -61,7 +59,6 @@ public class ProxyService {
             urlObj2.put("url", "/proxy/" + api.getPath() + "/api-docs");
             urls.add(urlObj2);
         });
-
 
         config.set("urls", urls);
         config.put("url", "");
@@ -97,30 +94,31 @@ public class ProxyService {
         HttpHeaders headers = buildForwardHeaders(request);
         byte[] requestBody = request.getInputStream().readAllBytes();
 
+        // 轉發請求到後端
         return backendHttpClient.forwardRequest(fullUrl, HttpMethod.valueOf(request.getMethod()), headers, requestBody)
                 .flatMap(responseEntity -> {
                     byte[] responseBody = responseEntity.getBody() == null ? new byte[0] : responseEntity.getBody();
                     int statusCode = responseEntity.getStatusCodeValue();
 
-                    // 如果是 API 文件，特殊處理內容
-                    if (requestPath.endsWith("/api-docs")) {
-                        try {
-                            String originalJson = new String(responseBody, StandardCharsets.UTF_8);
-                            String modifiedJson = modifyOpenApiJson(originalJson, backendName, request);
-                            responseBody = modifiedJson.getBytes(StandardCharsets.UTF_8);
-                        } catch (IOException e) {
-                            logger.log(Level.SEVERE, "修改 OpenAPI JSON 失敗", e);
-                        }
+                    // 判斷狀態碼是否表示成功（2xx）
+                    if (statusCode >= 200 && statusCode < 300) {
+                        logger.info("後端請求成功，狀態碼：" + statusCode);
+                    } else {
+                        logger.warning("後端請求失敗，狀態碼：" + statusCode);
                     }
 
                     HttpHeaders responseHeaders = filterResponseHeaders(responseEntity.getHeaders());
-                    responseHeaders.addAll(buildCorsHeaders(request));
+                    removeCorsHeaders(responseHeaders);     // 刪除後端的 CORS 處理，避免重複設定導致前端錯誤
 
                     return Mono.just(ResponseEntity.status(statusCode)
                             .headers(responseHeaders)
                             .body(responseBody));
                 })
-                .onErrorResume(ex -> Mono.just(buildErrorResponse(request, ex)));
+                .onErrorResume(ex -> {
+                    logger.severe("代理錯誤：" + ex.getMessage());
+                    ex.printStackTrace();
+                    return Mono.just(buildErrorResponse(request, ex));
+                });
     }
 
     /**
@@ -157,23 +155,6 @@ public class ProxyService {
     }
 
     /**
-     * 建立 CORS 跨域相關 headers
-     *
-     * @param request 原始請求
-     * @return CORS headers
-     */
-    public HttpHeaders buildCorsHeaders(HttpServletRequest request) {
-        HttpHeaders headers = new HttpHeaders();
-        String origin = request.getHeader("Origin") != null ? request.getHeader("Origin") : "*";
-        headers.add("Access-Control-Allow-Origin", origin);
-        headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-        headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization");
-        headers.add("Access-Control-Expose-Headers", "*");
-        headers.add("Access-Control-Max-Age", "3600");
-        return headers;
-    }
-
-    /**
      * 組裝錯誤回應
      *
      * @param request 原始請求
@@ -195,47 +176,41 @@ public class ProxyService {
             message = ex.getMessage();
         }
 
-        ObjectNode errorJson = objectMapper.createObjectNode();
-        errorJson.put("timestamp", Instant.now().toString());
-        errorJson.put("status", code);
-        errorJson.put("error", HttpStatus.valueOf(code).getReasonPhrase());
-        errorJson.put("message", message);
-        errorJson.put("path", request.getRequestURI());
-
-        byte[] errorBytes;
-        try {
-            errorBytes = objectMapper.writeValueAsBytes(errorJson);
-        } catch (Exception e) {
-            errorBytes = ("{\"code\":502,\"message\":\"代理錯誤\"}").getBytes(StandardCharsets.UTF_8);
-        }
-
-        HttpHeaders headers = buildCorsHeaders(request);
+        byte[] errorBytes = ("{\"code\":502,\"message\":\"代理錯誤\"}").getBytes(StandardCharsets.UTF_8);
+        HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         return ResponseEntity.status(code).headers(headers).body(errorBytes);
     }
 
     /**
-     * 修改 OpenAPI JSON 的 servers 欄位，改成中介的網址
+     * 建立 CORS 跨域相關 headers
      *
-     * @param json         原始 OpenAPI JSON
-     * @param backendName  後端名稱
-     * @param request      原始請求
-     * @return 修改後的 JSON 字串
-     * @throws IOException 讀取或寫入失敗
+     * @param request 原始請求
+     * @return CORS headers
      */
-    private String modifyOpenApiJson(String json, String backendName, HttpServletRequest request) throws IOException {
-        JsonNode rootNode = objectMapper.readTree(json);
-        ((ObjectNode) rootNode).remove("servers");
-
-        String gatewayUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
-                + "/proxy/" + backendName;
-        ArrayNode serversNode = objectMapper.createArrayNode();
-        ObjectNode serverNode = objectMapper.createObjectNode();
-        serverNode.put("url", gatewayUrl);
-        serversNode.add(serverNode);
-        ((ObjectNode) rootNode).set("servers", serversNode);
-
-        return objectMapper.writeValueAsString(rootNode);
+    public HttpHeaders buildCorsHeaders(HttpServletRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Access-Control-Allow-Origin", "*");  // 允許所有來源
+        headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        headers.add("Access-Control-Allow-Credentials", "true");
+        headers.add("Access-Control-Max-Age", "3600");  // 預檢請求緩存 1 小時
+        return headers;
     }
+
+    //
+
+    /**
+     * 刪除 CORS 相關標頭
+     * @param headers 後端傳來的 headers
+     */
+    private void removeCorsHeaders(HttpHeaders headers) {
+        headers.remove("Access-Control-Allow-Origin");
+        headers.remove("Access-Control-Allow-Methods");
+        headers.remove("Access-Control-Allow-Headers");
+        headers.remove("Access-Control-Allow-Credentials");
+        headers.remove("Access-Control-Max-Age");
+    }
+
 }
