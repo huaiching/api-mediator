@@ -109,4 +109,33 @@ public class ApiWebClientUtils {
                 .bodyToMono(responseType)
                 .block(Duration.ofSeconds(10));
     }
+    /**
+     * 呼叫DELETE API並返回 DTO List
+     * @param baseUrl  後端網域
+     * @param apiName   後端 API 方法
+     * @param responseType 響應的DTO類型
+     * @return DTO列表
+     */
+    public <T> List<T> callDeleteApiAndGetDtoList(String baseUrl, String apiName, Class<T> responseType) {
+        return buildWebClient(baseUrl).delete()
+                .uri(formatApiPath(apiName))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<List<T>>() {})
+                .block(Duration.ofSeconds(10));
+    }
+
+    /**
+     * 呼叫DELETE API並返回單個DTO對象
+     * @param baseUrl  後端網域
+     * @param apiName   後端 API 方法
+     * @param responseType 響應的DTO類型
+     * @return DTO對象
+     */
+    public <T> T callDeleteApiAndGetDto(String baseUrl, String apiName, Class<T> responseType) {
+        return buildWebClient(baseUrl).delete()
+                .uri(formatApiPath(apiName))
+                .retrieve()
+                .bodyToMono(responseType)
+                .block(Duration.ofSeconds(10));
+    }
 }
