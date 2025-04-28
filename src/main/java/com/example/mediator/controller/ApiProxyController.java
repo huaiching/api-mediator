@@ -9,6 +9,7 @@ import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * API 中介控制器，負責處理進來的 HTTP 請求
@@ -17,6 +18,7 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/proxy")
 public class ApiProxyController {
+    private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
 
     private final ProxyService proxyService;
 
@@ -48,6 +50,7 @@ public class ApiProxyController {
     @RequestMapping(value = "/{backendName}/**", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
     public Mono<ResponseEntity<byte[]>> proxyRequest(@PathVariable String backendName, HttpServletRequest request) throws IOException {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            // 處理預檢請求
             return Mono.just(ResponseEntity.ok().headers(proxyService.buildCorsHeaders(request)).body(new byte[0]));
         }
         return proxyService.proxy(backendName, request);
