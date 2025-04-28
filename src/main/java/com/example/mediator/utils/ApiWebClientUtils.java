@@ -9,6 +9,9 @@ import java.util.Map;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ * 透過 WebClient 呼叫 API
+ */
 @Component
 public class ApiWebClientUtils {
 
