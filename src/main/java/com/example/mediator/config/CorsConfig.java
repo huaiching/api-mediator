@@ -8,12 +8,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // 適用所有 API
-                .allowedOriginPatterns("*") // 接受所有來源，或自己設定白名單
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 建議補上 OPTIONS
-                .allowedHeaders("*") // 允許任何標頭
-                .exposedHeaders("*") // 前端可以取的標頭
-                .allowCredentials(true) // 允許攜帶 cookie
-                .maxAge(3600); // 預檢請求有效時間（秒）
+        registry.addMapping("/**") // 適用於所有路徑
+                .allowedOriginPatterns("http://localhost:[*]") // 允許的來源
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 允許的 HTTP 方法
+                .allowedHeaders("*") // 允許所有請求頭
+                .exposedHeaders("*") // 暴露所有 Header 給前端
+                .allowCredentials(true) // 是否允許攜帶憑證（如 Cookie）
+                .maxAge(3600); // 預檢請求的有效期（秒）
     }
 }
